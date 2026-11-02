@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell on Agricomm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="titlebar">
+            <a class="icon-btn" href="Agricomm.html" aria-label="Back to home">
+                <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+            </a>
+            <h1>Sell</h1>
+            <a class="icon-btn" href="buy.html" aria-label="Go to the market">
+                <svg viewBox="0 0 24 24"><path d="M3 9h18l-2 11H5L3 9z"/><path d="M8 9l4-6 4 6"/></svg>
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="page">
+    <div class="form-card" id="formCard">
+        <h2>List your product</h2>
+        <p class="lead">Tell buyers what you are selling. Add clear photos so your product sells faster.</p>
+
+        <form id="sellForm" novalidate>
+
+            <fieldset>
+                <legend>Product details</legend>
+
+                <div class="field">
+                    <label for="name">Product name</label>
+                    <input id="name" name="name" type="text" maxlength="80" placeholder="e.g. Fresh matooke (bunch)">
+                    <div class="error">Enter the product name.</div>
+                </div>
+
+                <div class="field">
+                    <label for="category">Category</label>
+                    <select id="category" name="category"></select>
+                    <div class="error">Choose a category.</div>
+                </div>
+
+                <div class="field">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" maxlength="600" placeholder="Describe the quality, variety, how it was grown, when it was harvested…"></textarea>
+                    <div class="error">Add a short description (at least 10 characters).</div>
+                </div>
+
+                <div class="row2">
+                    <div class="field">
+                        <label for="quantity">Quantity available</label>
+                        <input id="quantity" name="quantity" type="number" min="1" step="1" placeholder="e.g. 50">
+                        <div class="error">Enter how many are available.</div>
+                    </div>
+                    <div class="field">
+                        <label for="unit">Sold per</label>
+                        <input id="unit" name="unit" type="text" maxlength="20" placeholder="kg, bunch, bag, crate…">
+                        <div class="error">Enter the unit, for example kg.</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Price</legend>
+                <div class="row2">
+                    <div class="field">
+                        <label for="price">Selling price (UGX)</label>
+                        <input id="price" name="price" type="number" min="1" step="1" placeholder="e.g. 25000">
+                        <div class="error">Enter the selling price.</div>
+                    </div>
+                    <div class="field">
+                        <label for="oldPrice">Old price <span class="hint">(optional)</span></label>
+                        <input id="oldPrice" name="oldPrice" type="number" min="1" step="1" placeholder="e.g. 30000">
+                        <div class="error">The old price must be higher than the selling price.</div>
+                    </div>
+                </div>
+                <p class="hint" style="color:var(--muted);font-size:.85rem">Add an old price to show a discount such as “17% off” on your product.</p>
+            </fieldset>
+
+            <fieldset>
+                <legend>Photos</legend>
+                <div class="field" id="photoField">
+                    <label class="drop" for="photos">
+                        <input id="photos" type="file" accept="image/*" multiple>
+                        Tap to add photos (up to 3)
+                    </label>
+                    <div class="previews" id="previews"></div>
+                    <div class="error" id="photoError">Add at least one photo.</div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Your details</legend>
+                <div class="field">
+                    <label for="farmer">Your name or farm name</label>
+                    <input id="farmer" name="farmer" type="text" maxlength="60" placeholder="e.g. Namukasa Farm">
+                    <div class="error">Enter your name or farm name.</div>
+                </div>
+                <div class="row2">
+                    <div class="field">
+                        <label for="location">Location</label>
+                        <input id="location" name="location" type="text" maxlength="60" placeholder="e.g. Mbarara">
+                        <div class="error">Enter where the product is.</div>
+                    </div>
+                    <div class="field">
+                        <label for="phone">Phone / WhatsApp</label>
+                        <input id="phone" name="phone" type="tel" placeholder="e.g. 0772 123 456">
+                        <div class="error">Enter a valid phone number.</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="error" id="saveError" style="display:none;margin-bottom:10px"></div>
+            <button class="btn block" type="submit" id="submitBtn">Publish product</button>
+        </form>
+    </div>
+</main>
+
+<script src="store.js"></script>
+<script>
+    const form = document.getElementById("sellForm");
+    const previews = document.getElementById("previews");
+    const photoInput = document.getElementById("photos");
+    const photoField = document.getElementById("photoField");
+    const photoError = document.getElementById("photoError");
+    let photos = []; // small image data URLs
+
+    /* fill the category list */
+    const select = document.getElementById("category");
+    select.innerHTML = '<option value="">Choose a category</option>' +
+        CATEGORIES.map(c => `<option>${esc(c)}</option>`).join("");
+
+    /* ----- photos ----- */
+    photoInput.addEventListener("change", async () => {
+        const files = Array.from(photoInput.files);
+        photoInput.value = "";
+        for (const file of files) {
+            if (photos.length >= 3) break;
+            try {
+                photos.push(await fileToSmallImage(file));
+            } catch (err) {
+                photoError.textContent = err.message;
+                photoField.classList.add("invalid");
+            }
+        }
+        renderPreviews();
+    });
+
+    function renderPreviews() {
+        previews.innerHTML = photos.map((src, i) => `
+            <div>
+                <img src="${src}" alt="Photo ${i + 1} of your product">
+                <button type="button" data-remove="${i}" aria-label="Remove photo ${i + 1}">×</button>
+            </div>`).join("");
+        if (photos.length) {
+            photoField.classList.remove("invalid");
+        }
+    }
+
+    previews.addEventListener("click", e => {
+        const btn = e.target.closest("[data-remove]");
+        if (!btn) return;
+        photos.splice(Number(btn.dataset.remove), 1);
+        renderPreviews();
+    });
+
+    /* ----- validation ----- */
+    function setInvalid(id, bad) {
+        document.getElementById(id).closest(".field").classList.toggle("invalid", bad);
+        return bad;
+    }
+
+    function validate() {
+        const v = id => document.getElementById(id).value.trim();
+        const price = Number(v("price"));
+        const oldPrice = v("oldPrice") === "" ? null : Number(v("oldPrice"));
+        const phoneDigits = v("phone").replace(/\D/g, "");
+
+        const problems = [
+            setInvalid("name", v("name").length < 2),
+            setInvalid("category", v("category") === ""),
+            setInvalid("description", v("description").length < 10),
+            setInvalid("quantity", !(Number(v("quantity")) >= 1)),
+            setInvalid("unit", v("unit") === ""),
+            setInvalid("price", !(price >= 1)),
+            setInvalid("oldPrice", oldPrice !== null && !(oldPrice > price)),
+            setInvalid("farmer", v("farmer") === ""),
+            setInvalid("location", v("location") === ""),
+            setInvalid("phone", phoneDigits.length < 9 || phoneDigits.length > 13)
+        ];
+
+        if (photos.length === 0) {
+            photoError.textContent = "Add at least one photo.";
+            photoField.classList.add("invalid");
+            problems.push(true);
+        }
+        return !problems.some(Boolean);
+    }
+
+    /* ----- save ----- */
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+        const saveError = document.getElementById("saveError");
+        saveError.style.display = "none";
+
+        if (!validate()) {
+            const firstBad = form.querySelector(".invalid input, .invalid select, .invalid textarea, .invalid .drop");
+            if (firstBad) firstBad.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
+
+        const v = id => document.getElementById(id).value.trim();
+        const product = {
+            id: "p" + Date.now(),
+            name: v("name"),
+            category: v("category"),
+            description: v("description"),
+            quantity: Number(v("quantity")),
+            unit: v("unit"),
+            price: Number(v("price")),
+            oldPrice: v("oldPrice") === "" ? null : Number(v("oldPrice")),
+            images: photos,
+            farmer: v("farmer"),
+            location: v("location"),
+            phone: toWhatsAppNumber(v("phone")),
+            createdAt: Date.now()
+        };
+
+        try {
+            const list = loadList(KEY_PRODUCTS);
+            list.unshift(product);
+            saveList(KEY_PRODUCTS, list);
+        } catch (err) {
+            saveError.textContent = "Could not save. The browser storage is full. Try fewer or smaller photos.";
+            saveError.style.display = "block";
+            return;
+        }
+
+        document.getElementById("formCard").innerHTML = `
+            <div class="success">
+                <div class="tick" aria-hidden="true">✓</div>
+                <h2>Your product is live</h2>
+                <p class="lead">${esc(product.name)} is now listed on the market for buyers to see.</p>
+                <div class="actions">
+                    <a class="btn" href="buy.html">View in the market</a>
+                    <a class="btn outline" href="sell.html">Add another product</a>
+                </div>
+            </div>`;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+</script>
+</body>
+</html>

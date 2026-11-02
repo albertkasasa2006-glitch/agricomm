@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agricomm Market</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .toast {
+            position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%);
+            background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px;
+            font-size: .95rem; z-index: 40; opacity: 0; pointer-events: none; transition: opacity .2s;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body class="theme-green">
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="titlebar">
+            <a class="icon-btn" href="Agricomm.html" aria-label="Back to home">
+                <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+            </a>
+            <h1>Market</h1>
+            <span class="icon-btn" aria-hidden="true"></span>
+        </div>
+
+        <div class="searchrow">
+            <div class="brand">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 21v-9"/><path d="M12 12C12 8 9 6 5 6c0 4 3 6 7 6z"/><path d="M12 14c0-3 2-5 6-5 0 3-2 5-6 5z"/>
+                </svg>
+                <strong>AGRICOMM</strong>
+            </div>
+
+            <label class="search">
+                <input id="searchInput" type="search" placeholder="Search on Agricomm" aria-label="Search products">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            </label>
+
+            <button class="icon-btn heart-btn" id="headerFav" aria-pressed="false" aria-label="Show saved products">
+                <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-9.2C1.8 7.6 3.700 4.500 7 4.500c2 0 3.400 1 5 3 1.600-2 3-3 5-3 3.300 0 5.200 3.100 4 6.300C19 15.600 12 20 12 20z"/></svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="page">
+    <div class="chips" id="chips" aria-label="Product categories"></div>
+    <div id="sampleNotice" class="notice" hidden>
+        These are sample products so you can see the layout. They disappear as soon as a farmer lists a real product on the
+        <a href="sell.html">Sell page</a>.
+    </div>
+    <div id="sections"></div>
+</main>
+
+<nav class="bottombar" aria-label="Main">
+    <div class="bottombar-inner">
+        <a class="navbtn" href="Agricomm.html">
+            <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>
+            Home
+        </a>
+        <button class="navbtn" id="navCategories">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="2"/><rect x="14" y="4" width="6" height="6" rx="2"/><rect x="4" y="14" width="6" height="6" rx="2"/><rect x="14" y="14" width="6" height="6" rx="2"/></svg>
+            Categories
+        </button>
+        <a class="sell-fab" href="sell.html" aria-label="Sell a product"><span>Sell</span></a>
+        <button class="navbtn" id="navCart">
+            <svg viewBox="0 0 24 24"><path d="M3 4h2l2.500 11h11L21 7H6.500"/><circle cx="9" cy="19.500" r="1.200"/><circle cx="17" cy="19.500" r="1.200"/></svg>
+            Cart
+            <span class="badge" id="cartBadge"></span>
+        </button>
+        <button class="navbtn" id="navSaved" aria-pressed="false">
+            <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-9.2C1.8 7.6 3.700 4.500 7 4.500c2 0 3.400 1 5 3 1.600-2 3-3 5-3 3.300 0 5.200 3.100 4 6.300C19 15.600 12 20 12 20z"/></svg>
+            Saved
+        </button>
+    </div>
+</nav>
+
+<dialog id="detailDlg" aria-label="Product details"></dialog>
+<dialog id="cartDlg" aria-label="Your cart"></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="store.js"></script>
+<script>
+    /* ---------- data ---------- */
+    function sampleImage(emoji, bg) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180"><rect width="200" height="180" fill="${bg}"/><text x="100" y="120" font-size="90" text-anchor="middle">${emoji}</text></svg>`;
+        return "data:image/svg+xml," + encodeURIComponent(svg);
+    }
+
+    const SAMPLES = [
+        { id: "s1", name: "Fresh matooke (bunch)", category: "Fruits", description: "Sample listing. Green matooke harvested this week.", quantity: 40, unit: "bunch", price: 25000, oldPrice: 30000, images: [sampleImage("🍌", "#fff4c7")], farmer: "Sample Farm", location: "Mbarara", sample: true },
+        { id: "s2", name: "Sweet maize, dry grain", category: "Grains & Cereals", description: "Sample listing. Clean, well dried maize grain.", quantity: 200, unit: "kg", price: 1800, oldPrice: 2400, images: [sampleImage("🌽", "#fdebc8")], farmer: "Sample Farm", location: "Masindi", sample: true },
+        { id: "s3", name: "Tomatoes (crate)", category: "Vegetables", description: "Sample listing. Firm red tomatoes.", quantity: 25, unit: "crate", price: 60000, oldPrice: null, images: [sampleImage("🍅", "#fde0dd")], farmer: "Sample Farm", location: "Wakiso", sample: true },
+        { id: "s4", name: "Free range eggs (tray)", category: "Dairy & Eggs", description: "Sample listing. 30 eggs per tray.", quantity: 60, unit: "tray", price: 13000, oldPrice: 15000, images: [sampleImage("🥚", "#eef3f7")], farmer: "Sample Farm", location: "Gulu", sample: true }
+    ];
+
+    let products = [];
+    let favs = loadList(KEY_FAVS);
+    let cart = loadList(KEY_CART);
+    const state = { cat: "All", q: "", onlyFavs: false };
+
+    function loadProducts() {
+        const real = loadList(KEY_PRODUCTS);
+        products = real.length ? real : SAMPLES;
+        document.getElementById("sampleNotice").hidden = real.length > 0;
+    }
+
+    const ICON_HEART = '<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-9.2C1.8 7.6 3.700 4.500 7 4.500c2 0 3.400 1 5 3 1.600-2 3-3 5-3 3.300 0 5.200 3.100 4 6.300C19 15.600 12 20 12 20z"/></svg>';
+    const ICON_CART = '<svg viewBox="0 0 24 24"><path d="M3 4h2l2.500 11h11L21 7H6.500"/><circle cx="9" cy="19.500" r="1.200"/><circle cx="17" cy="19.500" r="1.200"/></svg>';
+
+    const discount = p => (p.oldPrice && p.oldPrice > p.price) ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+
+    /* ---------- rendering ---------- */
+    function slidesHTML(p, action) {
+        const imgs = p.images.map((src, i) =>
+            `<img src="${src}" alt="${esc(p.name)}, photo ${i + 1}" ${action ? `data-action="open" data-id="${p.id}"` : ""}>`).join("");
+        return `<div class="slides">${imgs}</div>`;
+    }
+
+    function cardHTML(p) {
+        const off = discount(p);
+        const dots = p.images.length > 1
+            ? `<div class="dots" aria-hidden="true">${p.images.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>`
+            : "";
+        return `
+        <article class="card">
+            <div class="media">
+                ${slidesHTML(p, true)}
+                ${dots}
+                <button class="round-btn fav ${favs.includes(p.id) ? "on" : ""}" data-action="fav" data-id="${p.id}" aria-label="Save ${esc(p.name)}">${ICON_HEART}</button>
+                <button class="round-btn add" data-action="add" data-id="${p.id}" aria-label="Add ${esc(p.name)} to cart">${ICON_CART}</button>
+            </div>
+            <div class="info">
+                <button class="name" data-action="open" data-id="${p.id}">${esc(p.name)}</button>
+                <div class="place">${esc(p.location)}</div>
+                <div class="price">${formatUGX(p.price)} <small>/ ${esc(p.unit)}</small></div>
+                ${off ? `<div class="was"><s>${formatUGX(p.oldPrice)}</s><span class="off">${off}% off</span></div>` : ""}
+            </div>
+        </article>`;
+    }
+
+    function filtered() {
+        const q = state.q.toLowerCase();
+        return products.filter(p =>
+            (state.cat === "All" || p.category === state.cat) &&
+            (!state.onlyFavs || favs.includes(p.id)) &&
+            (!q || [p.name, p.description, p.location, p.category, p.farmer].join(" ").toLowerCase().includes(q))
+        );
+    }
+
+    function render() {
+        const list = filtered();
+        const deals = list.filter(p => discount(p) > 0);
+        let html = "";
+
+        if (deals.length) {
+            html += `
+            <section class="section deals" aria-labelledby="dealsTitle">
+                <div class="section-head"><h2 id="dealsTitle">Hot Deals</h2><a href="#allSection"><span>All Products</span></a></div>
+                <div class="grid">${deals.map(cardHTML).join("")}</div>
+            </section>`;
+        }
+
+        html += `
+        <section class="section all" id="allSection" aria-labelledby="allTitle">
+            <div class="section-head"><h2 id="allTitle">${state.onlyFavs ? "Saved" : "Fresh from the farm"}</h2><span>${list.length} item${list.length === 1 ? "" : "s"}</span></div>
+            ${list.length
+                ? `<div class="grid">${list.map(cardHTML).join("")}</div>`
+                : `<div class="empty">Nothing matches yet. <a href="sell.html">List a product</a> or try another search.</div>`}
+        </section>`;
+
+        document.getElementById("sections").innerHTML = html;
+    }
+
+    function renderChips() {
+        document.getElementById("chips").innerHTML = ["All", ...CATEGORIES].map(c =>
+            `<button class="chip" data-action="cat" data-cat="${esc(c)}" aria-pressed="${state.cat === c}">${esc(c)}</button>`).join("");
+    }
+
+    function updateCartBadge() {
+        const count = cart.reduce((n, item) => n + item.qty, 0);
+        document.getElementById("cartBadge").textContent = count ? count : "";
+    }
+
+    function updateSavedButtons() {
+        document.getElementById("headerFav").classList.toggle("active", state.onlyFavs);
+        document.getElementById("headerFav").setAttribute("aria-pressed", state.onlyFavs);
+        document.getElementById("navSaved").setAttribute("aria-pressed", state.onlyFavs);
+        document.getElementById("navSaved").style.color = state.onlyFavs ? "#f2b705" : "";
+    }
+
+    /* ---------- toast ---------- */
+    let toastTimer;
+    function toast(msg) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 1600);
+    }
+
+    /* ---------- cart ---------- */
+    function addToCart(id) {
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        const item = cart.find(c => c.id === id);
+        if (item) {
+            if (item.qty >= p.quantity) { toast("That is all the farmer has available"); return; }
+            item.qty += 1;
+        } else {
+            cart.push({ id, qty: 1 });
+        }
+        saveList(KEY_CART, cart);
+        updateCartBadge();
+        toast("Added to cart");
+    }
+
+    function renderCart() {
+        const dlg = document.getElementById("cartDlg");
+        const rows = cart.map(item => ({ item, p: products.find(x => x.id === item.id) })).filter(r => r.p);
+        let body;
+
+        if (!rows.length) {
+            body = `<p>Your cart is empty. Tap the cart button on a product to add it.</p>`;
+        } else {
+            const total = rows.reduce((sum, r) => sum + r.p.price * r.item.qty, 0);
+            body = rows.map(({ item, p }) => {
+                const msg = `Hello ${p.farmer}, I found "${p.name}" on Agricomm. I would like ${item.qty} ${p.unit}.`;
+                const wa = p.sample ? "" : `<a class="wa" target="_blank" rel="noopener" href="https://wa.me/${p.phone}?text=${encodeURIComponent(msg)}">WhatsApp ${esc(p.farmer)}</a>`;
+                return `
+                <div class="cart-row">
+                    <img src="${p.images[0]}" alt="">
+                    <div class="meta">
+                        <strong>${esc(p.name)}</strong>
+                        <span>${formatUGX(p.price)} / ${esc(p.unit)}</span>
+                        <div class="controls">
+                            <span class="qty">
+                                <button data-action="dec" data-id="${p.id}" aria-label="Decrease quantity">−</button>
+                                <span>${item.qty}</span>
+                                <button data-action="inc" data-id="${p.id}" aria-label="Increase quantity">+</button>
+                            </span>
+                            <button class="link-btn" data-action="remove" data-id="${p.id}">Remove</button>
+                            ${wa}
+                        </div>
+                    </div>
+                </div>`;
+            }).join("") +
+            `<div class="total"><span>Total</span><span>${formatUGX(total)}</span></div>
+             <p style="color:var(--muted);font-size:.88rem;margin-top:10px">Contact each farmer on WhatsApp to agree on payment and delivery.</p>`;
+        }
+
+        dlg.innerHTML = `
+            <div class="dlg-head"><h2>Your cart</h2><button data-action="close" aria-label="Close">×</button></div>
+            <div class="dlg-body">${body}</div>`;
+    }
+
+    /* ---------- product details ---------- */
+    function openDetail(id) {
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        const off = discount(p);
+        const msg = `Hello ${p.farmer}, I found "${p.name}" on Agricomm and I am interested.`;
+        const contact = p.sample ? "" :
+            `<a class="btn secondary block" style="margin-top:10px" target="_blank" rel="noopener" href="https://wa.me/${p.phone}?text=${encodeURIComponent(msg)}">Contact farmer on WhatsApp</a>`;
+
+        const dlg = document.getElementById("detailDlg");
+        dlg.innerHTML = `
+            <div class="dlg-head"><h2>Product details</h2><button data-action="close" aria-label="Close">×</button></div>
+            <div class="dlg-body">
+                ${slidesHTML(p, false)}
+                <h3>${esc(p.name)}</h3>
+                <div class="price">${formatUGX(p.price)} <small>/ ${esc(p.unit)}</small></div>
+                ${off ? `<div class="was"><s>${formatUGX(p.oldPrice)}</s><span class="off">${off}% off</span></div>` : ""}
+                <p>${esc(p.description)}</p>
+                <dl class="facts">
+                    <dt>Category</dt><dd>${esc(p.category)}</dd>
+                    <dt>Available</dt><dd>${p.quantity} ${esc(p.unit)}</dd>
+                    <dt>Location</dt><dd>${esc(p.location)}</dd>
+                    <dt>Farmer</dt><dd>${esc(p.farmer)}</dd>
+                </dl>
+                <button class="btn block" data-action="add" data-id="${p.id}">Add to cart</button>
+                ${contact}
+            </div>`;
+        dlg.showModal();
+    }
+
+    /* ---------- events ---------- */
+    document.addEventListener("click", e => {
+        const el = e.target.closest("[data-action]");
+        if (!el) return;
+        const id = el.dataset.id;
+
+        switch (el.dataset.action) {
+            case "fav":
+                favs = favs.includes(id) ? favs.filter(f => f !== id) : [...favs, id];
+                saveList(KEY_FAVS, favs);
+                el.classList.toggle("on", favs.includes(id));
+                if (state.onlyFavs) render();
+                break;
+            case "add": addToCart(id); break;
+            case "open": openDetail(id); break;
+            case "cat": state.cat = el.dataset.cat; renderChips(); render(); break;
+            case "close": el.closest("dialog").close(); break;
+            case "inc": {
+                const item = cart.find(c => c.id === id), p = products.find(x => x.id === id);
+                if (item && p && item.qty < p.quantity) item.qty++;
+                saveList(KEY_CART, cart); updateCartBadge(); renderCart(); break;
+            }
+            case "dec": {
+                const item = cart.find(c => c.id === id);
+                if (item && item.qty > 1) item.qty--;
+                saveList(KEY_CART, cart); updateCartBadge(); renderCart(); break;
+            }
+            case "remove":
+                cart = cart.filter(c => c.id !== id);
+                saveList(KEY_CART, cart); updateCartBadge(); renderCart(); break;
+        }
+    });
+
+    /* closes a dialog when the dark area around it is tapped */
+    document.querySelectorAll("dialog").forEach(d =>
+        d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+
+    /* dots under each photo slider follow the scroll */
+    document.addEventListener("scroll", e => {
+        if (!e.target.classList || !e.target.classList.contains("slides")) return;
+        const slides = e.target;
+        const dots = slides.parentElement.querySelectorAll(".dots i");
+        const index = Math.round(slides.scrollLeft / slides.clientWidth);
+        dots.forEach((d, i) => d.classList.toggle("on", i === index));
+    }, true);
+
+    document.getElementById("searchInput").addEventListener("input", e => { state.q = e.target.value; render(); });
+
+    function toggleSaved() { state.onlyFavs = !state.onlyFavs; updateSavedButtons(); render(); }
+    document.getElementById("headerFav").addEventListener("click", toggleSaved);
+    document.getElementById("navSaved").addEventListener("click", toggleSaved);
+
+    document.getElementById("navCart").addEventListener("click", () => { renderCart(); document.getElementById("cartDlg").showModal(); });
+    document.getElementById("navCategories").addEventListener("click", () => {
+        const chips = document.getElementById("chips");
+        chips.scrollIntoView({ behavior: "smooth", block: "center" });
+        const active = chips.querySelector('[aria-pressed="true"]');
+        if (active) active.focus({ preventScroll: true });
+    });
+
+    /* ---------- start ---------- */
+    loadProducts();
+    renderChips();
+    render();
+    updateCartBadge();
+    updateSavedButtons();
+</script>
+</body>
+</html>
